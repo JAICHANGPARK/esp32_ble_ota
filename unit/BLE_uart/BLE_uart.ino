@@ -30,6 +30,9 @@ bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint8_t txValue = 0;
 
+// See the following for generating UUIDs:
+// https://www.uuidgenerator.net/
+
 #define SERVICE_UUID           "0000FF00-0000-1000-8000-00805f9b34fb" // UART service UUID
 #define CHARACTERISTIC_UUID_RX "0000FF01-0000-1000-8000-00805f9b34fb"
 #define CHARACTERISTIC_UUID_TX "0000FF02-0000-1000-8000-00805f9b34fb"
