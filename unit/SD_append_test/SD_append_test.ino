@@ -241,12 +241,12 @@ void setup() {
     dummpy[i] = dValue++;
   }
   //  createDir(SD, "/update");
-  deleteFile(SD, "/update_test.txt");
-  writeFile(SD, "/update_test.txt", "");
-  appendFile(SD, "/update_test.txt", dummpy, 256);
-  readFile(SD, "/update_test.txt");
+  deleteFile(SD, "/update_test.bin");
+  writeFile(SD, "/update_test.bin", "");
+  appendFile(SD, "/update_test.bin", dummpy, 256);
+  readFile(SD, "/update_test.bin");
   Serial.println();
-  deleteFile(SD, "/update_test.txt");
+  deleteFile(SD, "/update_test.bin");
 }
 
 void loop() {
