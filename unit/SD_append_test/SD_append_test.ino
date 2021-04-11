@@ -245,6 +245,7 @@ void setup() {
   writeFile(SD, "/update_test.txt", "");
   appendFile(SD, "/update_test.txt", dummpy, 256);
   readFile(SD, "/update_test.txt");
+  Serial.println();
   deleteFile(SD, "/update_test.txt");
 }
 
