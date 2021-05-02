@@ -6,16 +6,21 @@
 
 BLEServer *pServer = NULL;
 BLECharacteristic * pTxCharacteristic;
+
+BLECharacteristic * pOtaControlCharacteristic;
+
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint8_t txValue = 0;
 
-#define SERVICE_UUID           "0000FF00-0000-1000-8000-00805f9b34fb" // UART service UUID
-#define CHARACTERISTIC_UUID_RX "0000FF01-0000-1000-8000-00805f9b34fb"
-#define CHARACTERISTIC_UUID_TX "0000FF02-0000-1000-8000-00805f9b34fb"
+#define SERVICE_UUID                    "0000FF00-0000-1000-8000-00805f9b34fb"  // UART service UUID
+#define CHARACTERISTIC_UUID_RX          "0000FF01-0000-1000-8000-00805f9b34fb"  // 데이터 쓰는것
+#define CHARACTERISTIC_UUID_TX          "0000FF02-0000-1000-8000-00805f9b34fb"
+#define CHARACTERISTIC_UUID_OTA_CONTROL "0000FF03-0000-1000-8000-00805f9b34fb"  // 총 버퍼 컨트롤용
 
 uint8_t bleFileBuff[1024] = {0x00,};
 bool isReceived = false;
+bool receivedIndicator = false;
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -48,9 +53,26 @@ class MyCallbacks: public BLECharacteristicCallbacks {
     }
 };
 
+class OtaControlCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string rxValue = pCharacteristic->getValue();
+
+      if (rxValue.length() > 0) {
+       
+        isReceived = true;
+        for (int i = 0; i < rxValue.length(); i++)
+        {
+         
+        }
+      }
+    }
+};
+
 
 void setup() {
   Serial.begin(115200);
+  pinMode(5, OUTPUT);
+
 
   // Create the BLE Device
   BLEDevice::init("UART Service");
@@ -77,6 +99,12 @@ void setup() {
 
   pRxCharacteristic->setCallbacks(new MyCallbacks());
 
+  pOtaControlCharacteristic = pService->createCharacteristic(
+      CHARACTERISTIC_UUID_OTA_CONTROL,
+      BLECharacteristic::PROPERTY_WRITE
+   );
+   pOtaControlCharacteristic->setCallbacks(new OtaControlCallbacks());
+
   // Start the service
   pService->start();
 
@@ -100,6 +128,9 @@ void loop() {
       }
       Serial.println();
       Serial.println("*********");
+      receivedIndicator = !receivedIndicator;
+      digitalWrite(5, receivedIndicator);
+      
       isReceived = false;
     }
 
