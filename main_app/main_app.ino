@@ -2,6 +2,7 @@
 #include "SD.h"
 #include "SPI.h"
 
+#include <Update.h>
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -33,6 +34,40 @@ int n_chunk_length = 0;
 uint8_t *int_array ;
 int buff_counter = 0;
 int chunk_counter = 0;
+
+// perform the actual update from a given stream
+void performUpdateV2(uint8_t * datas, size_t updateSize) {
+  Serial.print(">>> performUpdate updateSize: ");
+  Serial.println(updateSize);
+  if (Update.begin(updateSize)) {
+    size_t written = Update.write(datas, updateSize );
+    Serial.print(">>> performUpdate written: ");
+    Serial.println(written);
+    if (written == updateSize) {
+      Serial.println("Written : " + String(written) + " successfully");
+    }
+    else {
+      Serial.println("Written only : " + String(written) + "/" + String(updateSize) + ". Retry?");
+    }
+    if (Update.end()) {
+      Serial.println("OTA done!");
+      if (Update.isFinished()) {
+        Serial.println("Update successfully completed. Rebooting.");
+      }
+      else {
+        Serial.println("Update not finished? Something went wrong!");
+      }
+    }
+    else {
+      Serial.println("Error Occurred. Error #: " + String(Update.getError()));
+    }
+
+  }
+  else
+  {
+    Serial.println("Not enough space to begin OTA");
+  }
+}
 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
   Serial.printf("Listing directory: %s\n", dirname);
@@ -104,15 +139,15 @@ void appendFileV2(fs::FS &fs, const char * path) {
   }
   file.write(int_array, n_elements);
   Serial.printf("Done Append to file: %s\n", path);
-//  for (int i = 0; i < n_elements; i++) {
-//    Serial.print("index: ");
-//    Serial.print(i);
-//    Serial.print("->");
-//    Serial.print(int_array[i]);
-//    Serial.print(" ");
-//    //    Serial.println(file.write(int_array[i]));
-//
-//  }
+  //  for (int i = 0; i < n_elements; i++) {
+  //    Serial.print("index: ");
+  //    Serial.print(i);
+  //    Serial.print("->");
+  //    Serial.print(int_array[i]);
+  //    Serial.print(" ");
+  //    //    Serial.println(file.write(int_array[i]));
+  //
+  //  }
   file.close();
 }
 
@@ -316,6 +351,11 @@ void loop() {
           pTxCharacteristic->notify();
           appendFileV2(SD, "/update.bin");
 
+          performUpdateV2(int_array, n_elements);
+
+          free(int_array);
+          delay(1000);
+          ESP.restart();
         }
       }
       isReceived = false;
