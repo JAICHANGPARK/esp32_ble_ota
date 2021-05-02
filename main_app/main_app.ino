@@ -170,11 +170,11 @@ void loop() {
         Serial.println(" *********");
         receivedIndicator = !receivedIndicator;
         digitalWrite(5, receivedIndicator); 
-        pTxCharacteristic->setValue(chunk_counter);
-        pTxCharacteristic->notify();
 
         chunk_counter++;
-      
+        pTxCharacteristic->setValue(chunk_counter);
+        pTxCharacteristic->notify();
+        
         if(buff_counter == n_elements){
           Serial.println(">>>>>>>>>>>>> Same? >>>>>>>>>>>>>>>>>>>>");
         }
