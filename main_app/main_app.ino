@@ -161,9 +161,6 @@ void loop() {
         int_array[buff_counter] = bleFileBuff[i];
         buff_counter++;
         }
-      
-      
-     
         Serial.println();
         Serial.print("buff_counter: ");
         Serial.print(buff_counter);
@@ -174,11 +171,24 @@ void loop() {
         chunk_counter++;
         pTxCharacteristic->setValue(chunk_counter);
         pTxCharacteristic->notify();
-        
+
         if(buff_counter == n_elements){
           Serial.println(">>>>>>>>>>>>> Same? >>>>>>>>>>>>>>>>>>>>");
         }
         received_counter = 0;
+      }else{
+        if(chunk_counter == n_chunk_length -1){
+          Serial.println(">>>>>>>>>>>>>>> is Last Packet");
+          for (int i = 0; i < received_counter; i++) {
+            Serial.print(bleFileBuff[i], HEX);
+            Serial.print(" ");
+            int_array[buff_counter] = bleFileBuff[i];
+            buff_counter++;
+          }
+          Serial.println();
+          Serial.print("buff_counter: ");
+          Serial.print(buff_counter);
+        }
       }
        isReceived = false;
     }
