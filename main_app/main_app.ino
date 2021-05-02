@@ -67,11 +67,15 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
 
 void deleteFile(fs::FS &fs, const char * path) {
   Serial.printf("Deleting file: %s\n", path);
-  if (fs.remove(path)) {
-    Serial.println("File deleted");
-  } else {
-    Serial.println("Delete failed");
+  if (fs.exists(path)) {
+    Serial.printf("Deleting exists file: %s\n", path);
+    if (fs.remove(path)) {
+      Serial.println("File deleted");
+    } else {
+      Serial.println("Delete failed");
+    }
   }
+
 }
 
 void appendFile(fs::FS &fs, const char * path, const char * message) {
@@ -98,10 +102,17 @@ void appendFileV2(fs::FS &fs, const char * path) {
     Serial.println("Failed to open file for appending");
     return;
   }
-  for (int i = 0; i < n_elements; i++) {
-    Serial.println(file.write(int_array[i]));
-  }
-
+  file.write(int_array, n_elements);
+  Serial.printf("Done Append to file: %s\n", path);
+//  for (int i = 0; i < n_elements; i++) {
+//    Serial.print("index: ");
+//    Serial.print(i);
+//    Serial.print("->");
+//    Serial.print(int_array[i]);
+//    Serial.print(" ");
+//    //    Serial.println(file.write(int_array[i]));
+//
+//  }
   file.close();
 }
 
