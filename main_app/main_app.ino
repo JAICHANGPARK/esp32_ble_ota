@@ -20,7 +20,15 @@ uint8_t txValue = 0;
 
 uint8_t bleFileBuff[1024] = {0x00,};
 bool isReceived = false;
+int received_counter = 0;
 bool receivedIndicator = false;
+bool isPsramSetting = false;
+int n_elements = 0;
+int n_chunk_length = 0;
+
+uint8_t *int_array ;
+int buff_counter = 0;
+int chunk_counter = 0;
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -40,12 +48,20 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         Serial.println(rxValue.length());
         //        Serial.println("*********");
         //        Serial.print("Received Value: ");
-        isReceived = true;
+        
         for (int i = 0; i < rxValue.length(); i++)
         {
           bleFileBuff[i] = (uint8_t)rxValue[i];
           //          Serial.print(rxValue[i]);
+          received_counter = received_counter + 1;
         }
+         Serial.print("received_counter: ");
+         Serial.println(received_counter);
+        if(received_counter == 512){
+          Serial.println("received_counter is 512");
+          isReceived = true;
+        }
+        
 
         //        Serial.println();
         //        Serial.println("*********");
@@ -58,12 +74,25 @@ class OtaControlCallbacks: public BLECharacteristicCallbacks {
       std::string rxValue = pCharacteristic->getValue();
 
       if (rxValue.length() > 0) {
-       
-        isReceived = true;
+             Serial.println("OtaControlCallbacks *********");
         for (int i = 0; i < rxValue.length(); i++)
         {
-         
+                   Serial.print(rxValue[i]);
         }
+
+      
+        n_elements = ((uint8_t)rxValue[0] << 24) & 0xFF000000
+        | ((uint8_t)rxValue[1] << 16) & 0x00FF0000
+        | ((uint8_t)rxValue[2] << 8) & 0x0000FF00
+        | ((uint8_t)rxValue[3]) & 0x000000FF;
+
+        n_chunk_length = ((uint8_t)rxValue[4] << 24) & 0xFF000000
+        | ((uint8_t)rxValue[5] << 16) & 0x00FF0000
+        | ((uint8_t)rxValue[6] << 8) & 0x0000FF00
+        | ((uint8_t)rxValue[7]) & 0x000000FF;
+
+        Serial.println();
+          isPsramSetting = true;
       }
     }
 };
@@ -101,7 +130,7 @@ void setup() {
 
   pOtaControlCharacteristic = pService->createCharacteristic(
       CHARACTERISTIC_UUID_OTA_CONTROL,
-      BLECharacteristic::PROPERTY_WRITE
+      BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_READ
    );
    pOtaControlCharacteristic->setCallbacks(new OtaControlCallbacks());
 
@@ -113,6 +142,8 @@ void setup() {
   Serial.println("Waiting a client connection to notify...");
 }
 
+
+
 void loop() {
 
   if (deviceConnected) {
@@ -120,18 +151,56 @@ void loop() {
     //        pTxCharacteristic->notify();
     //        txValue++;
     if (isReceived) {
+      
       Serial.println("*********");
       Serial.print("Received Value: ");
-      for (int i = 0; i < 512; i++) {
+      if(received_counter == 512){
+        for (int i = 0; i < 512; i++) {
         Serial.print(bleFileBuff[i], HEX);
         Serial.print(" ");
-      }
-      Serial.println();
-      Serial.println("*********");
-      receivedIndicator = !receivedIndicator;
-      digitalWrite(5, receivedIndicator);
+        int_array[buff_counter] = bleFileBuff[i];
+        buff_counter++;
+        }
       
-      isReceived = false;
+      
+     
+        Serial.println();
+        Serial.print("buff_counter: ");
+        Serial.print(buff_counter);
+        Serial.println(" *********");
+        receivedIndicator = !receivedIndicator;
+        digitalWrite(5, receivedIndicator); 
+        pTxCharacteristic->setValue(chunk_counter);
+        pTxCharacteristic->notify();
+
+        chunk_counter++;
+      
+        if(buff_counter == n_elements){
+          Serial.println(">>>>>>>>>>>>> Same? >>>>>>>>>>>>>>>>>>>>");
+        }
+        received_counter = 0;
+      }
+       isReceived = false;
+    }
+   
+
+    if(isPsramSetting){
+      Serial.print("n_elements: ");
+      Serial.println(n_elements);
+      int temp = n_elements + 1024;
+      if(n_elements != 0){
+        //psram setting
+       int_array = (uint8_t *) ps_malloc(temp * sizeof(uint8_t));
+      
+       Serial.println("Set PSRAM ps_malloc");
+      
+      }else{
+       //psram free 
+       free(int_array);
+        Serial.println("free PSRAM ");
+      
+      }
+      isPsramSetting = false;
     }
 
     delay(10); // bluetooth stack will go into congestion, if too many packets are sent
@@ -144,7 +213,22 @@ void loop() {
     pServer->startAdvertising(); // restart advertising
     Serial.println("start advertising");
     oldDeviceConnected = deviceConnected;
-  }
+     free(int_array);
+      n_elements = 0;
+      for(int i = 0; i < 1024; i++){
+        bleFileBuff[i] = 0x00;
+      }
+    
+      isReceived = false;
+      receivedIndicator = false;
+      isPsramSetting = false;
+      n_elements = 0;
+      n_chunk_length = 0;
+
+
+      buff_counter = 0;
+      chunk_counter = 0;
+    }
   // connecting
   if (deviceConnected && !oldDeviceConnected) {
     // do stuff here on connecting
