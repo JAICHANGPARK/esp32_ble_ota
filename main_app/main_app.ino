@@ -55,11 +55,17 @@ class MyCallbacks: public BLECharacteristicCallbacks {
           //          Serial.print(rxValue[i]);
           received_counter = received_counter + 1;
         }
-         Serial.print("received_counter: ");
+         Serial.print(">>> received_counter: ");
          Serial.println(received_counter);
         if(received_counter == 512){
           Serial.println("received_counter is 512");
           isReceived = true;
+        }else{
+          Serial.print(">>> chunk_counter: ");
+         Serial.println(chunk_counter);
+          if(chunk_counter == n_chunk_length -1){
+            isReceived = true;
+          }
         }
         
 
@@ -90,6 +96,9 @@ class OtaControlCallbacks: public BLECharacteristicCallbacks {
         | ((uint8_t)rxValue[5] << 16) & 0x00FF0000
         | ((uint8_t)rxValue[6] << 8) & 0x0000FF00
         | ((uint8_t)rxValue[7]) & 0x000000FF;
+
+        Serial.print(">>> n_chunk_length:: ");
+        Serial.println(n_chunk_length);
 
         Serial.println();
           isPsramSetting = true;
@@ -188,6 +197,7 @@ void loop() {
           Serial.println();
           Serial.print("buff_counter: ");
           Serial.print(buff_counter);
+
         }
       }
        isReceived = false;
